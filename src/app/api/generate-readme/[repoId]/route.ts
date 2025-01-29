@@ -110,3 +110,81 @@ export async function GET(request: Request, { params }: { params: { repoId: stri
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
 }
+
+
+
+export async function POST(request: Request, { params }: { params: { repoId: string } }) {
+  const { repoId } = await  params; // Extract repoId from params
+  const { message } = await request.json(); // Extract message from the request body
+
+  if (!repoId) {
+    return NextResponse.json({ error: "Repository ID is required" }, { status: 400 });
+  }
+
+  if (!message) {
+    return NextResponse.json({ error: "Message is required" }, { status: 400 });
+  }
+
+  try {
+    // Step 1: Fetch repository details from GitHub
+    const repoDetailsResponse = await axios.get(`https://api.github.com/repositories/${repoId}`, {
+      headers: {
+        Authorization: `token ${GITHUB_ACCESS_TOKEN}`,
+      },
+    });
+
+    const repoName = repoDetailsResponse.data.name;
+    const owner = repoDetailsResponse.data.owner.login;
+
+    // Step 2: Fetch repository contents (files and folders)
+    const repoContentsResponse = await axios.get(
+      `https://api.github.com/repos/${owner}/${repoName}/contents`,
+      {
+        headers: {
+          Authorization: `token ${GITHUB_ACCESS_TOKEN}`,
+        },
+      }
+    );
+
+    // Step 3: Extract code from all files in the repository
+    const files = await Promise.all(
+      repoContentsResponse.data.map(async (file: any) => {
+        if (file.type === "file" && !file.name.endsWith(".md")) { // Exclude markdown files
+          try {
+            const fileContentResponse = await axios.get(file.download_url);
+            return `File: ${file.path}\n\n${fileContentResponse.data}`;
+          } catch (error) {
+            console.error(`Error fetching file ${file.path}:`, error);
+            return null;
+          }
+        }
+        return null;
+      })
+    );
+
+    const codeContent = files.filter(Boolean).join("\n\n"); // Combine all file contents into a single string
+
+    // Step 4: Send the code and message to Gemini AI for analysis
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" }); // Use the appropriate Gemini model
+    const prompt = `
+      You are a code analysis assistant. Below is the code from a GitHub repository (${repoName}).
+      Analyze the code and answer the following question or fulfill the request:
+
+      Question/Request: ${message}
+
+      Here is the code:
+      ${codeContent}
+
+      Provide a detailed and accurate response based on the code analysis.
+    `;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text(); // Get the AI's response
+
+    // Step 5: Return the AI's response
+    return NextResponse.json({ success: true, response: responseText });
+  } catch (error) {
+    console.error("Error: ", error);
+    return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
+  }
+}

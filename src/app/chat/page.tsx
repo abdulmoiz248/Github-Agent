@@ -4,8 +4,8 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
-import type { Message } from "@/types"
-
+import type { Message, Repository } from "@/types"
+import axios from "axios"
 const ChatMessage: React.FC<{ message: Message }> = ({ message }) => (
   <motion.div
     className={`mb-4 p-3 rounded-lg max-w-[80%] ${
@@ -25,39 +25,68 @@ const ChatMessage: React.FC<{ message: Message }> = ({ message }) => (
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
+  const [repos, setRepos] = useState<Repository[]>([])
+  const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
-  useEffect(scrollToBottom, [])
-
-  const handleSend = () => {
-    if (input.trim()) {
-      const newUserMessage: Message = { id: Date.now().toString(), text: input, sender: "user" }
-      setMessages((prev) => [...prev, newUserMessage])
-      setInput("")
-
-      // Simulated AI response
-      setTimeout(() => {
-        const aiResponses = [
-          "Acknowledged. Proceeding with data analysis.",
-          "Request processed. Initiating system scan.",
-          "Command received. Executing protocol Alpha-7.",
-          "Data packet intercepted. Decryption in progress.",
-          "Neural link established. Awaiting further instructions.",
-        ]
-        const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)]
-        const newAiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: randomResponse,
-          sender: "ai",
-        }
-        setMessages((prev) => [...prev, newAiMessage])
-      }, 1000)
+  useEffect(() => {
+    const fetchRepos = async () => {
+     const res=await axios.get('/api/fetch-repo')
+     if(res.data.success)
+      setRepos(res.data.repos)
     }
-  }
+    fetchRepos()
+  }, [])
+
+
+  useEffect(scrollToBottom, [messagesEndRef])
+
+  const handleSend = async () => {
+    if (input.trim() && selectedRepo) {
+      const newUserMessage: Message = {
+        id: Date.now().toString(),
+        text: input,
+        sender: "user",
+      };
+      setMessages((prev) => [...prev, newUserMessage]);
+      setInput("");
+  
+      try {
+        // Call your backend API for POST request
+        const response = await axios.post(`/api/generate-readme/${selectedRepo.id}`, { message: input });
+  
+        if (response.data.success) {
+          const newAiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: response.data.response,
+            sender: "ai",
+          };
+          setMessages((prev) => [...prev, newAiMessage]);
+        } else {
+          // Handle any error response from the backend
+          const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: "Something went wrong, please try again.",
+            sender: "ai",
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        }
+      } catch (error) {
+        console.error(error);
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: "Failed to get AI response, please try again later.",
+          sender: "ai",
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+    }
+  };
+  
 
   return (
     <motion.div
@@ -81,6 +110,27 @@ export default function Chat() {
         </svg>
         DISCONNECT
       </Link>
+      <div className="mb-4">
+        <select
+          value={selectedRepo?.id || ""}
+          onChange={(e) => {
+            const repo = repos.find((r) => r.id === Number.parseInt(e.target.value))
+            setSelectedRepo(repo || null)
+            setMessages([])
+          }}
+          className="w-full bg-cyber-dark text-neon-green border-2 border-neon-green rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-neon-green"
+        >
+          <option value="">SELECT REPOSITORY</option>
+          {repos.map((repo) => (
+            <option key={repo.id} value={repo.id}>
+              {repo.name}
+            </option>
+          ))}
+        </select>
+      </div>
+      {selectedRepo && (
+        <div className="text-neon-yellow text-xl font-bold mb-4 text-center">ACTIVE REPO: {selectedRepo.name}</div>
+      )}
       <div className="flex-grow bg-cyber-dark rounded-lg shadow-neon p-4 mb-4 overflow-y-auto">
         <AnimatePresence>
           {messages.map((message) => (
@@ -97,14 +147,16 @@ export default function Chat() {
           onKeyPress={(e) => {
             if (e.key === "Enter") handleSend()
           }}
-          placeholder="ENTER COMMAND"
-          className="flex-grow mr-2 bg-cyber-dark text-neon-green border-2 border-neon-green rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-neon-green"
+          placeholder={selectedRepo ? "ENTER COMMAND" : "SELECT A REPOSITORY FIRST"}
+          disabled={!selectedRepo}
+          className="flex-grow mr-2 bg-cyber-dark text-neon-green border-2 border-neon-green rounded-md py-2 px-4 focus:outline-none focus:ring-2 focus:ring-neon-green disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={handleSend}
-          className="bg-neon-green text-cyber-black rounded-md py-2 px-4 hover:bg-neon-blue transition-colors duration-300"
+          disabled={!selectedRepo}
+          className="bg-neon-green text-cyber-black rounded-md py-2 px-4 hover:bg-neon-blue transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           SEND
         </motion.button>

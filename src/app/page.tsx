@@ -58,7 +58,7 @@ export default function Home() {
           )}
         </AnimatePresence>
         <div className="space-y-4">
-          <Link href="/chat" passHref>
+          {/* <Link href="/chat" passHref>
             <motion.a
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -66,7 +66,7 @@ export default function Home() {
             >
               Chat with your Repos
             </motion.a>
-          </Link>
+          </Link> */}
           <Link href="/repositories" passHref>
             <motion.a
               whileHover={{ scale: 1.05 }}
