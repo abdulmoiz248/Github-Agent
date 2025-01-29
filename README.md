@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Simple Python Program to Find the Sum of Natural Numbers
 
-## Getting Started
+### Overview
+This simple Python program calculates the sum of natural numbers up to a user-defined limit. The program takes an integer input from the user, representing the upper limit, and then uses a for loop to iterate through the natural numbers from 1 to the limit. The sum of these numbers is calculated and printed as the output.
 
-First, run the development server:
+### Usage
+To use the program, simply run:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+python sum_natural_numbers.py
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+You will be prompted to enter an integer value representing the upper limit. Enter the value and press Enter. The program will calculate and display the sum of natural numbers up to that limit.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Code
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```python
+# Get the upper limit from the user
+limit = int(input("Enter the upper limit: "))
 
-## Learn More
+# Initialize the sum to 0
+sum = 0
 
-To learn more about Next.js, take a look at the following resources:
+# Iterate through the natural numbers from 1 to the limit
+for i in range(1, limit + 1):
+    # Add each number to the sum
+    sum += i
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Print the sum
+print("The sum of natural numbers up to", limit, "is:", sum)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Example
+If you run the program and enter the upper limit as 10, the output will be:
 
-## Deploy on Vercel
+```
+The sum of natural numbers up to 10 is: 55
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Explanation
+The program initializes a variable `sum` to 0. Then, it uses a for loop to iterate through the natural numbers from 1 to the user-defined limit. In each iteration of the loop, the current number `i` is added to the `sum`. After the loop has completed, the program prints the calculated sum.
