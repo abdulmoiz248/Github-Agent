@@ -31,9 +31,12 @@ setShowConfirmModal(true)
      
   }
 
-  const handleConfirmDecrypt = () => {
+  const handleConfirmDecrypt = async() => {
     if (selectedRepo) {
-      
+      const res=await axios.get(`/api/generate-readme/${selectedRepo.id}`)
+      if(res.data.success){
+        console.log(res.data)
+      }
     }
     setShowConfirmModal(false)
   }
